@@ -1,0 +1,102 @@
+Instructions - AmeVM (Amelia's Virtual Machine)
+
+RISC
+* 15 registers | 32b wide
+* 32 bit instructions:
+
+0000 0000 0000 0000 0000 0000 0000 0000
+^-------- ^--- ^--- ^------------------
+opcode    r1   r2   immediate
+
+writes <addr>                   0
+write <src>                     1
+read <dest>                     2
+copy8 <src>, <dest>             3
+copy16 <src>, <dest>            4
+copy32 <src>, <dest>            5
+copy64 <src>, <dest>            6
+copy8 <imm>, <dest>             7
+copy16, <imm>, <dest>           8
+copy32 <imm>, <dest>            9
+copy64 <imm>, <dest>            10
+copy8 <deref>, <dest>           11
+copy16 <deref>, <dest>          12
+copy32 <deref>, <dest>          13
+copy64 <deref>, <dest>          14
+copy8 <src>, <deref>            15
+copy16 <src>, <deref>           16
+copy32 <src>, <deref>           17
+copy64 <src>, <deref>           18
+push8 <src>                     19
+push16 <src>                    20
+push32 <src>                    21
+push64 <src>                    22
+pop8 <dest>                     23
+pop16 <dest>                    24
+pop32 <dest>                    25
+pop64 <dest>                    26
+goto <label>                    27
+call <label>                    28
+sys <num>                       29
+cmp <reg>, <reg>                30
+cmp <reg>, <num>                31
+jge <label>                     32
+jg <label>                      33
+jle <label>                     34
+jl <label>                      35
+je <label>                      36
+jne <label>                     37
+add <reg>, <reg>                38
+add <deref>, <reg>              39
+add <imm>, <reg>                40
+sub <reg>, <reg>                41
+sub <deref>, <reg>              42
+sub <imm>, <reg>                43
+mul <reg>, <reg>                44
+mul <deref>, <reg>              45
+mul <imm>, <reg>                46
+div <reg>, <reg>                47
+div <deref>, <reg>              48
+div <imm>, <reg>                49
+mod <reg>, <reg>                50
+mod <deref>, <reg>              51
+mod <imm>, <reg>                52
+shr <imm>, <reg>                53
+shl <imm>, <reg>                54
+and <reg>, <reg>                55
+and <imm>, <reg>                56
+or <reg>, <reg>                 57
+or <imm>, <reg>                 58
+xor <reg>, <reg>                59
+xor <imm>, <reg>                60
+not <reg>                       61
+
+Constants
+
+.literal <name> <string> -- stores base address of string.
+.word <name> <int32>
+
+Registers
+
+@ret => for returning values    1
+@spr => stack pointer           2
+@glb => global pointer          3
+@rta => return address          4
+@fla => flags                   5
+@fpr => frame pointer           6
+
+0000 0000 0000 0000
+^    ^    ^    ^
+CF   ZF   SF   OF
+
+@rg0 => general purpose         7
+@rg1                            8
+@rg2                            9
+@rg3                            10
+@rg4                            11
+
+@pr0 => param0                  12
+@pr1                            13
+@pr2                            14
+
+@rg5                            15

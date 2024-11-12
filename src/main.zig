@@ -110,6 +110,7 @@ const Exp = enum {
     xor_reg_imm,
     not_reg, // 62
     copy8_deref_imm, // 63
+    write_int_reg,
 };
 
 const AsmError = error{
@@ -221,18 +222,42 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
                 memory[idx] = value;
             },
 
+            14 => { // copy32_reg_deref : copy32 <@reg1>, [<@reg2>]
+                const r1: usize = @intCast(instr.reg1);
+                const idx: usize = @intCast(registers[instr.reg2]);
+                const value = std.mem.readPackedIntNative(i32, memory, idx);
+                registers[r1] = value;
+            },
+
             18 => { // copy32_deref_reg : copy32 [<@reg1>], <@reg2>
-                const addr: usize = @intCast(instr.reg1);
+                const addr: usize = @intCast(registers[instr.reg1]);
                 const r2: usize = @intCast(instr.reg2);
                 std.mem.writePackedIntNative(i32, memory, addr, registers[r2]);
-                for (0..4) |i| {
-                    std.debug.print("0x{x}\n", .{addr + i});
-                }
+            },
+
+            20 => { // push8_reg : push8 <@reg>
+                registers[0x2] -= 1;
+                const idx: usize = @intCast(registers[0x2]); // @spr
+                memory[idx] = @intCast(registers[instr.reg1] & 0xFF);
+            },
+
+            24 => { // pop8_reg : pop8 <@reg>
+                const idx: usize = @intCast(registers[0x2]);
+                registers[instr.reg1] = memory[idx];
+                registers[0x2] += 1;
+            },
+
+            39 => { // add_reg_reg : add <@reg1>, <@reg2>
+                registers[instr.reg1] +%= registers[instr.reg2];
+            },
+
+            40 => { // add_reg_deref : add <@reg1>, [<@reg2>]
+                const idx: usize = @intCast(registers[instr.reg2]);
+                registers[instr.reg1] +%= memory[idx];
             },
 
             41 => { // add_reg_imm : add <@reg>, <imm>
                 const r1: usize = @intCast(instr.reg1);
-                std.debug.print("Adding {d} to {d}\n", .{ instr.immediate, registers[r1] });
                 registers[r1] +%= instr.immediate;
             },
 
@@ -242,7 +267,12 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
                 const addr: usize = @intCast(registers[r1]);
                 const value: u8 = @truncate(instr.immediate);
                 memory[addr] = value;
-                // std.debug.print("Inserted {d} at {d}\n", .{ instr.immediate, registers[r1] });
+            },
+
+            64 => { // write_int_reg : writei <@reg>
+                const value = registers[instr.reg1];
+                //std.debug.print("here", .{});
+                try stdout.print("{d}", .{value});
             },
 
             else => {
@@ -285,7 +315,7 @@ pub fn main() !void {
         reg.* = 0;
     }
 
-    registers[0x2] = 1023; // @spr = 1023, top of stack
+    registers[0x2] = 1024; // @spr = 1023, top of stack
 
     try run(instrs, memory, registers, allocator);
 }

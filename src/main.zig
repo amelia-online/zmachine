@@ -171,6 +171,7 @@ pub fn loadInstructions(bytes: []u8, allocator: std.mem.Allocator) !std.ArrayLis
     if (bytes.len % 4 != 0) {
         return AsmError.IncorrectFormat;
     }
+
     var i: u64 = 0;
     while (i < bytes.len) : (i += 4) {
         const opcode: u8 = bytes[i];
@@ -261,6 +262,62 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
                 registers[r1] +%= instr.immediate;
             },
 
+            42 => { // sub_reg_reg : sub <@reg1>, <@reg2>
+                registers[instr.reg1] -%= registers[instr.reg2];
+            },
+
+            43 => { // sub_reg_deref : sub <@reg1>, [<@reg2>]
+                const idx: usize = @intCast(registers[instr.reg2]);
+                registers[instr.reg1] -%= memory[idx];
+            },
+
+            44 => { // sub_reg_imm : sub <@reg>, <imm>
+                const r1: usize = @intCast(instr.reg1);
+                registers[r1] -%= instr.immediate;
+            },
+
+            45 => { // mult_reg_reg : mult <@reg1>, <@reg2>
+                registers[instr.reg1] *%= registers[instr.reg2];
+            },
+
+            46 => { // mult_reg_deref : mult <@reg1>, [<@reg2>]
+                const idx: usize = @intCast(registers[instr.reg2]);
+                registers[instr.reg1] *%= memory[idx];
+            },
+
+            47 => { // mult_reg_imm : mult <@reg>, <imm>
+                const r1: usize = @intCast(instr.reg1);
+                registers[r1] *%= instr.immediate;
+            },
+
+            48 => { // div_reg_reg : div <@reg1>, <@reg2>
+                registers[instr.reg1] = @divFloor(registers[instr.reg1], registers[instr.reg2]);
+            },
+
+            49 => { // div_reg_deref : div <@reg1>, [<@reg2>]
+                const idx: usize = @intCast(registers[instr.reg2]);
+                registers[instr.reg1] = @divFloor(registers[instr.reg1], memory[idx]);
+            },
+
+            50 => { // div_reg_imm : div <@reg>, <imm>
+                const r1: usize = @intCast(instr.reg1);
+                registers[r1] = @divFloor(registers[r1], instr.immediate);
+            },
+
+            51 => { // mod_reg_reg : mod <@reg1>, <@reg2>
+                registers[instr.reg1] = @mod(registers[instr.reg1], registers[instr.reg2]);
+            },
+
+            52 => { // mod_reg_deref : mod <@reg1>, [<@reg2>]
+                const idx: usize = @intCast(registers[instr.reg2]);
+                registers[instr.reg1] = @mod(registers[instr.reg1], memory[idx]);
+            },
+
+            53 => { // mod_reg_imm : mult <@reg>, <imm>
+                const r1: usize = @intCast(instr.reg1);
+                registers[r1] = @mod(registers[r1], instr.immediate);
+            },
+
             // ...
             63 => { // copy8_deref_imm : copy8 [<@reg1>], <imm>
                 const r1: usize = @intCast(instr.reg1);
@@ -315,7 +372,7 @@ pub fn main() !void {
         reg.* = 0;
     }
 
-    registers[0x2] = 1024; // @spr = 1023, top of stack
+    registers[0x2] = 1024; // @spr = 1024, top of stack
 
     try run(instrs, memory, registers, allocator);
 }

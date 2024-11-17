@@ -211,6 +211,11 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
                 }
             },
 
+            2 => { // write_reg : write <@reg>
+                const val: u8 = @intCast(registers[instr.reg1]);
+                try stdout.print("{c}", .{val});
+            },
+
             6 => { //copy32_reg_reg : copy32 <@reg1>, <@reg2>
                 const r1: usize = @intCast(instr.reg1);
                 const r2: usize = @intCast(instr.reg2);
@@ -263,10 +268,69 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
             },
 
             32 => { // cmp_reg_imm : cmp <@reg>, <imm>
+                // 0000 0   0  00 0000 0000 (flags : @fla)
+                //      ^   ^  ^
+                //      EQL GT LT
+
                 const val = registers[instr.reg1];
                 const diff = val - instr.immediate;
+                registers[0x5] &= 0xF0FF;
                 if (diff == 0) {
                     registers[0x5] |= 0x800; // set ZF to 1
+                } else if (diff > 0) {
+                    registers[0x5] |= 0x400; // GT
+                } else {
+                    registers[0x5] |= 0x200; // LT
+                }
+            },
+
+            33 => { // jg_imm
+                const gtBit = (registers[0x5] >> 10) & 1;
+                if (gtBit == 1) {
+                    registers[0x3] = instr.immediate;
+                    continue;
+                }
+            },
+
+            34 => { // jge_imm
+                const gtBit = (registers[0x5] >> 10) & 1;
+                const eqlBit = (registers[0x5] >> 11) & 1;
+                if ((gtBit == 1) or (eqlBit == 1)) {
+                    registers[0x3] = instr.immediate;
+                    continue;
+                }
+            },
+
+            35 => { // jl_imm
+                const ltBit = (registers[0x5] >> 9) & 1;
+                if (ltBit == 1) {
+                    registers[0x3] = instr.immediate;
+                    continue;
+                }
+            },
+
+            36 => { // jle_imm
+                const ltBit = (registers[0x5] >> 9) & 1;
+                const eqlBit = (registers[0x5] >> 11) & 1;
+                if ((ltBit == 1) or (eqlBit == 1)) {
+                    registers[0x3] = instr.immediate;
+                    continue;
+                }
+            },
+
+            37 => { // je_imm
+                const eqlBit = (registers[0x5] >> 11) & 1;
+                if (eqlBit == 1) {
+                    registers[0x3] = instr.immediate;
+                    continue;
+                }
+            },
+
+            38 => { // jne_imm
+                const eqlBit = (registers[0x5] >> 11) & 1;
+                if (eqlBit != 1) {
+                    registers[0x3] = instr.immediate;
+                    continue;
                 }
             },
 

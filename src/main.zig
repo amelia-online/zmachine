@@ -15,6 +15,10 @@ const ln: u8 = 10;
 //^    ^    ^    ^
 //CF   ZF   SF   OF
 
+// 0000 0   0  00 0000 0000 (flags : @fla)
+//      ^   ^  ^
+//      EQL GT LT
+
 //@rg0 => general purpose         7
 //@rg1                            8
 //@rg2                            9
@@ -189,7 +193,12 @@ pub fn loadInstructions(bytes: []u8, allocator: std.mem.Allocator) !std.ArrayLis
 pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: std.mem.Allocator) !void {
     const stdout = std.io.getStdOut().writer();
     _ = alloc;
-    for (instrs.items) |instr| {
+    // std.debug.print("start: @glb = {d}\n", .{registers[0x3]});
+    while (registers[0x3] != instrs.items.len) {
+        // std.debug.print("@glb = {d}\n", .{registers[0x3]});
+        const index: usize = @intCast(registers[0x3]);
+        const instr = instrs.items[index];
+        // std.debug.print("opcode: {d}\n", .{instr.opcode});
         switch (instr.opcode) {
             0 => { // writes_addr_imm : writes <@reg :- addr> <imm :- len>
                 const regval = registers[instr.reg1];
@@ -246,6 +255,19 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
                 const idx: usize = @intCast(registers[0x2]);
                 registers[instr.reg1] = memory[idx];
                 registers[0x2] += 1;
+            },
+
+            28 => { // goto_imm : goto <imm>
+                registers[0x3] = instr.immediate; // @glb
+                continue;
+            },
+
+            32 => { // cmp_reg_imm : cmp <@reg>, <imm>
+                const val = registers[instr.reg1];
+                const diff = val - instr.immediate;
+                if (diff == 0) {
+                    registers[0x5] |= 0x800; // set ZF to 1
+                }
             },
 
             39 => { // add_reg_reg : add <@reg1>, <@reg2>
@@ -318,6 +340,24 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
                 registers[r1] = @mod(registers[r1], instr.immediate);
             },
 
+            54 => { // shr_reg_imm : shr <@reg> <imm>
+                const imm: u5 = @intCast(instr.immediate);
+                registers[instr.reg1] >>= imm;
+            },
+
+            55 => { // shl_reg_imm : shl <@reg> <imm>
+                const imm: u5 = @intCast(instr.immediate);
+                registers[instr.reg1] <<= imm;
+            },
+
+            56 => { // and_reg_reg : and <@reg1> <@reg2>
+                registers[instr.reg1] = registers[instr.reg1] & registers[instr.reg2];
+            },
+
+            57 => { // and_reg_imm : and <@reg> <imm>
+                registers[instr.reg1] = registers[instr.reg1] & instr.immediate;
+            },
+
             // ...
             63 => { // copy8_deref_imm : copy8 [<@reg1>], <imm>
                 const r1: usize = @intCast(instr.reg1);
@@ -336,6 +376,7 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
                 return AsmError.InvalidOpcode;
             },
         }
+        registers[0x3] += 1;
     }
 }
 

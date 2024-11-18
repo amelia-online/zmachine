@@ -115,6 +115,7 @@ const Exp = enum {
     not_reg, // 62
     copy8_deref_imm, // 63
     write_int_reg,
+    read_int_reg,
 };
 
 const AsmError = error{
@@ -192,6 +193,8 @@ pub fn loadInstructions(bytes: []u8, allocator: std.mem.Allocator) !std.ArrayLis
 
 pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: std.mem.Allocator) !void {
     const stdout = std.io.getStdOut().writer();
+    const stdin = std.io.getStdIn().reader();
+    _ = stdin;
     _ = alloc;
     // std.debug.print("start: @glb = {d}\n", .{registers[0x3]});
     while (registers[0x3] != instrs.items.len) {
@@ -265,6 +268,24 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
             28 => { // goto_imm : goto <imm>
                 registers[0x3] = instr.immediate; // @glb
                 continue;
+            },
+
+            31 => { // cmp_reg_reg : cmp <@reg1>, <@reg2>
+                // 0000 0   0  00 0000 0000 (flags : @fla)
+                //      ^   ^  ^
+                //      EQL GT LT
+
+                const lhs = registers[instr.reg1];
+                const rhs = registers[instr.reg2];
+                const diff = lhs - rhs;
+                registers[0x5] &= 0xF0FF;
+                if (diff == 0) {
+                    registers[0x5] |= 0x800; // set ZF to 1
+                } else if (diff > 0) {
+                    registers[0x5] |= 0x400; // GT
+                } else {
+                    registers[0x5] |= 0x200; // LT
+                }
             },
 
             32 => { // cmp_reg_imm : cmp <@reg>, <imm>

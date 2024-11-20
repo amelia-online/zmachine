@@ -219,25 +219,60 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
                 try stdout.print("{c}", .{val});
             },
 
+            3 => { // reads_reg : reads <@reg>, <imm>
+                //var buffer: [instr.immediate]u8 = undefined;
+                // const result = stdin.readUntilDelimiter(&buffer, '\n');
+                // todo
+            },
+
+            4 => { // copy8_reg_reg : copy8 <@reg1>, <@reg2>
+                registers[instr.reg1] = registers[instr.reg2] & 0xFF;
+            },
+
+            5 => { // copy16_reg_reg : copy16 <@reg1>, <@reg2>
+                registers[instr.reg1] = registers[instr.reg2] & 0xFFFF;
+            },
+
             6 => { //copy32_reg_reg : copy32 <@reg1>, <@reg2>
                 const r1: usize = @intCast(instr.reg1);
                 const r2: usize = @intCast(instr.reg2);
                 registers[r1] = registers[r2];
             },
 
-            // ...
-            8 => { // copy8_reg_imm : copy8 <@reg>, <imm>
-                const regval: usize = @intCast(instr.reg1);
-                registers[regval] = instr.immediate;
+            7 => { // copy64_reg_reg : copy64 <@reg1>, <@reg2>
+
             },
 
             // ...
-            12 => { // copy8_deref_reg : copy8 [<@reg1>], <@reg2>
-                const r1: usize = @intCast(instr.reg1);
-                const r2: usize = @intCast(instr.reg2);
-                const idx: usize = @intCast(registers[r1]);
-                const value: u8 = @intCast(registers[r2] & 0xFF);
-                memory[idx] = value;
+            8 => { // copy8_reg_imm : copy8 <@reg>, <imm>
+                const regval: usize = @intCast(instr.reg1);
+                registers[regval] = instr.immediate & 0xFF;
+            },
+
+            9 => { // copy16_reg_imm : copy16 <@reg>, <imm>
+                registers[instr.reg1] = instr.immediate;
+            },
+
+            10 => { // copy32_reg_imm : copy32 <@reg>, <imm>
+
+            },
+
+            11 => { // copy64_reg_imm : copy64 <@reg>, <imm>
+                // I didn't think this through... these will be
+                // nops until I think of something.
+            },
+
+            // ...
+            12 => { // copy8_deref_reg : copy8 <@reg1>, [<@reg2>]
+                const idx: usize = @intCast(registers[instr.reg2]);
+                const value = std.mem.readPackedIntNative(u8, memory, idx);
+                registers[instr.reg1] = value;
+            },
+
+            13 => { // copy16_reg_deref : copy16 <@reg1>, [<@reg2>]
+                const idx: usize = @intCast(registers[instr.reg2]);
+                const value = std.mem.readPackedIntNative(u16, memory, idx);
+                registers[instr.reg1] = value;
             },
 
             14 => { // copy32_reg_deref : copy32 <@reg1>, [<@reg2>]

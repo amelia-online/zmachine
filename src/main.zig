@@ -153,6 +153,12 @@ const Instr = struct {
     }
 };
 
+pub fn allocate(memory: []u8, numBytes: u32) !u16 {
+    _ = memory;
+    _ = numBytes;
+    return 0;
+}
+
 pub fn usage() !void {
     const stdout = std.io.getStdOut().writer();
     try stdout.print("usage: ./zm <path>\n", .{});
@@ -240,7 +246,7 @@ pub fn run(instrs: std.ArrayList(Instr), memory: []u8, registers: []i32, alloc: 
             },
 
             7 => { // copy64_reg_reg : copy64 <@reg1>, <@reg2>
-
+                // ...
             },
 
             // ...
